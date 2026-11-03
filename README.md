@@ -1,10 +1,10 @@
 # Q-EDGE
 
-## Queue-Aware Event-Driven Execution
+# Limit Order Book Execution and Queue Dynamics
 
-Q-EDGE is a quantitative market-microstructure research project focused on
-understanding the economics of passive and aggressive execution in limit
-order books.
+A quantitative market-microstructure project investigating queue dynamics,
+fill probability, adverse selection, and passive versus aggressive execution
+in limit order books.
 
 The project will progressively investigate topics including:
 
@@ -19,8 +19,7 @@ The project will progressively investigate topics including:
 - signal decay
 - event-driven market simulation
 
-The project will use Python, SQL, and C++ while emphasizing mathematical
-understanding, reproducible research, and independently written implementations.
+
 
 ## Current Status
 
