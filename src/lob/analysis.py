@@ -146,7 +146,9 @@ def execution_experiments(
                         else states[start].asks.get(price, 0),
                         "fill_rate": filled / size,
                         "events_to_fill": (
-                            fills[-1][0] - start + 1 if remaining == 0 and fills else None
+                            (0 if style == "AGGRESSIVE" else fills[-1][0] - start + 1)
+                            if remaining == 0 and fills
+                            else None
                         ),
                         "spread": before["spread"],
                         "imbalance": before["imbalance"],
@@ -156,21 +158,23 @@ def execution_experiments(
                     }
                     row.update(local_costs)
                     row["price_improvement"] = slippage(side, aggressive.average_price, average)
+                    offset = 0 if style == "AGGRESSIVE" else 1
                     for horizon in horizons:
+                        integer(horizon, "horizon", 1)
                         eligible = [
                             (idx, fill)
                             for idx, fill in fills
-                            if idx + 1 + horizon < len(states)
-                            and book_metrics(states[idx + 1])["midpoint"] is not None
-                            and book_metrics(states[idx + 1 + horizon])["midpoint"] is not None
+                            if idx + offset + horizon < len(states)
+                            and book_metrics(states[idx + offset])["midpoint"] is not None
+                            and book_metrics(states[idx + offset + horizon])["midpoint"] is not None
                         ]
                         volume = sum(fill.quantity for _, fill in eligible)
                         row[f"adverse_selection_{horizon}"] = (
                             sum(
                                 adverse_selection(
                                     side,
-                                    book_metrics(states[idx + 1])["midpoint"],
-                                    book_metrics(states[idx + 1 + horizon])["midpoint"],
+                                    book_metrics(states[idx + offset])["midpoint"],
+                                    book_metrics(states[idx + offset + horizon])["midpoint"],
                                 )
                                 * fill.quantity
                                 for idx, fill in eligible

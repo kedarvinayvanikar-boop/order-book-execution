@@ -44,3 +44,31 @@ def test_passive_vs_aggressive_known_flow():
         == executions.set_index("order_id").filled_quantity.to_dict()
     )
     assert book.bids == {5000: 100}
+
+
+def test_markouts_use_pre_event_aggressive_and_post_event_passive_state():
+    book = OrderBook({5000: 100}, {5004: 100, 5006: 100})
+    events = [BookEvent("TRADE", "ASK", 5004, 100), BookEvent("ADD", "ASK", 5004, 100)]
+    executions, _ = execution_experiments(book, events, interval=10, sizes=(50,), horizons=(1,))
+    aggressive_buy = executions[
+        (executions.side == "BUY") & (executions.style == "AGGRESSIVE")
+    ].iloc[0]
+    assert aggressive_buy.events_to_fill == 0
+    assert aggressive_buy.adverse_selection_1 == pytest.approx(-0.01)
+    assert aggressive_buy.markout_quantity_1 == 50
+
+
+def test_cancellation_assumption_sensitivity():
+    book = OrderBook({5000: 100}, {5004: 100})
+    events = [
+        BookEvent("CANCEL", "BID", 5000, 100),
+        BookEvent("ADD", "BID", 5000, 100),
+        BookEvent("TRADE", "BID", 5000, 50),
+    ]
+    optimistic, _ = execution_experiments(book, events, interval=10, sizes=(50,))
+    conservative, _ = execution_experiments(
+        book, events, interval=10, sizes=(50,), cancellations_ahead=False
+    )
+    mask = (optimistic.side == "BUY") & (optimistic.style == "PASSIVE")
+    assert optimistic.loc[mask, "fill_rate"].iloc[0] == 1
+    assert conservative.loc[mask, "fill_rate"].iloc[0] == 0
