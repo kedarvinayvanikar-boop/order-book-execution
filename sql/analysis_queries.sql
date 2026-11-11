@@ -3,7 +3,7 @@ SELECT o.experiment_id, o.style, o.side,
        CASE WHEN o.quantity <= 100 THEN 'small'
             WHEN o.quantity <= 300 THEN 'medium' ELSE 'large' END AS size_bucket,
        COUNT(*) AS orders,
-       AVG(1.0*x.filled_quantity/o.quantity) AS fill_rate,
+       AVG(1.0*x.filled_quantity/o.quantity) AS fill_rate, AVG(x.remaining_quantity=0) AS full_fill_probability,
        AVG(x.slippage_bps) AS slippage_bps,
        AVG(x.implementation_cost) AS implementation_cost,
        AVG(x.price_impact_percentage) AS impact_percentage
@@ -12,7 +12,7 @@ GROUP BY o.experiment_id,o.style,o.side,size_bucket;
 
 -- Queue placement and the cost of waiting.
 SELECT o.experiment_id, o.quantity_ahead/100*100 AS queue_bucket,
-       AVG(1.0*x.filled_quantity/o.quantity) AS fill_rate,
+       AVG(1.0*x.filled_quantity/o.quantity) AS fill_rate, AVG(x.remaining_quantity=0) AS full_fill_probability,
        AVG(x.events_to_fill) AS events_to_fill, AVG(x.adverse_selection_5) AS adverse_selection
 FROM orders o JOIN executions x USING (experiment_id,order_id)
 WHERE o.style='PASSIVE'

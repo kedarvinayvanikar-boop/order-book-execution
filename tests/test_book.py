@@ -73,3 +73,30 @@ def test_empty_and_zero_add_and_legacy_adapter():
     assert book.best_bid == 5000 and book.bids[5000] == 12
     with pytest.raises(ValueError):
         book.apply({"Type": "ADD"})
+
+
+def test_bid_ask_improvements_and_integer_overflow_are_atomic():
+    from lob.events import MAX_INTEGER
+
+    book = OrderBook({5000: MAX_INTEGER}, {5004: 10, 5005: 100})
+    before = book.snapshot()
+    with pytest.raises(ValueError):
+        book.apply(BookEvent("ADD", "BID", 5000, 1))
+    assert book.snapshot() == before
+    book.apply(BookEvent("ADD", "BID", 5001, 2))
+    book.apply(BookEvent("ADD", "ASK", 5003, 3))
+    assert book.best_bid == 5001 and book.best_ask == 5003
+    assert book_metrics(book)["ask_quantity"] == 3
+
+
+def test_synthetic_events_conserve_liquidity():
+    from lob.simulation import generate_events, initial_book
+
+    book = initial_book()
+    for event in generate_events(2000, seed=123):
+        bid_before, ask_before = sum(book.bids.values()), sum(book.asks.values())
+        book.apply(event)
+        delta = event.quantity if event.event_type == "ADD" else -event.quantity
+        assert sum(book.bids.values()) == bid_before + (delta if event.side == "BID" else 0)
+        assert sum(book.asks.values()) == ask_before + (delta if event.side == "ASK" else 0)
+        assert all(q > 0 for q in [*book.bids.values(), *book.asks.values()])

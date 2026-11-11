@@ -145,6 +145,8 @@ def execution_experiments(
                         if side == "BUY"
                         else states[start].asks.get(price, 0),
                         "fill_rate": filled / size,
+                        "fully_filled": remaining == 0,
+                        "observed_events": end - start,
                         "events_to_fill": (
                             (0 if style == "AGGRESSIVE" else fills[-1][0] - start + 1)
                             if remaining == 0 and fills
@@ -206,6 +208,7 @@ def execution_summary(executions):
     return data.groupby(["style", "side", "queue_bucket", "size_bucket"], observed=True).agg(
         orders=("order_id", "size"),
         fill_rate=("fill_rate", "mean"),
+        full_fill_probability=("fully_filled", "mean"),
         slippage_bps=("slippage_bps", "mean"),
         cost=("implementation_cost", "mean"),
         events_to_fill=("events_to_fill", "mean"),

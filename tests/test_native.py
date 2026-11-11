@@ -88,3 +88,19 @@ def test_native_rejection_is_atomic(kind, side, price, quantity):
     with pytest.raises(ValueError):
         book.apply(engine().Event(kind, side, price, quantity))
     assert book.bids == {5000: 200} and book.asks == {5004: 200}
+
+
+def test_native_overflow_and_queue_cancellation():
+    native = engine()
+    book = native.OrderBook({5000: 2**63 - 1}, {})
+    with pytest.raises(ValueError):
+        book.apply(native.Event("ADD", "BID", 5000, 1))
+    assert book.bids == {5000: 2**63 - 1}
+    python, cpp = PassiveOrder("BUY", 5000, 10, 0), native.PassiveOrder("BUY", 5000, 10, 0)
+    python.cancel()
+    cpp.cancel()
+    event = BookEvent("TRADE", "BID", 5000, 20)
+    python.update(event, 0)
+    cpp.update(native_events([event])[0], 0)
+    assert python.status == cpp.status == "CANCELLED"
+    assert python.remaining_quantity == cpp.remaining_quantity == 10
