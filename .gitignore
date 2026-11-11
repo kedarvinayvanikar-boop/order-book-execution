@@ -5,3 +5,11 @@ __pycache__/
 .idea/
 .vscode/
 .env
+exercises/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+results/
+*.so
+*.dylib
