@@ -1,4 +1,4 @@
-# Limit Order Book Execution and Queue Dynamics
+# Order Book Execution Research
 
 An event-driven order book and execution research system with a Python reference
 engine, a C++17 processing core, and a SQLite research store. It studies how spread,
